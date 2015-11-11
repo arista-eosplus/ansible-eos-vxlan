@@ -1,0 +1,72 @@
+---
+- name: Configure Vxlan logical interface
+  eos_vxlan:
+    name={{ vxlan.name }}
+    description={{ vxlan.description|default(omit) }}
+    source_interface={{ vxlan.source_interface|default(omit) }}
+    multicast_group={{ vxlan.multicast_group|default(omit) }}
+    udp_port={{ vxlan.udp_port|default(omit) }}
+    enable={{ vxlan.enable|default('true') }}
+    state={{ vxlan.state|default(omit) }}
+    config={{ eos_eapi_config|default(omit) }}
+    username={{ eos_eapi_username|default(omit) }}
+    password={{ eos_eapi_password|default(omit) }}
+    enablepwd={{ eos_eapi_enablepwd|default(omit) }}
+    transport={{ eos_eapi_transport|default(omit) }}
+    connection={{ eos_eapi_connection|default(omit) }}
+    host={{ eos_eapi_host|default(omit) }}
+    port={{ eos_eapi_port|default(omit) }}
+    debug={{ eos_debug|default(omit) }}
+  when: vxlan is defined
+
+- name: Configure Vxlan global flood list
+  eos_vxlan_vtep:
+    name=Vxlan1
+    vtep={{ item.vtep }}
+    vlan={{ item.vlan|default(omit) }}
+    state={{ item.state|default(omit) }}
+    config={{ eos_eapi_config|default(omit) }}
+    username={{ eos_eapi_username|default(omit) }}
+    password={{ eos_eapi_password|default(omit) }}
+    enablepwd={{ eos_eapi_enablepwd|default(omit) }}
+    transport={{ eos_eapi_transport|default(omit) }}
+    connection={{ eos_eapi_connection|default(omit) }}
+    host={{ eos_eapi_host|default(omit) }}
+    port={{ eos_eapi_port|default(omit) }}
+    debug={{ eos_debug|default(omit) }}
+  when: vteps is defined
+  with_items: vteps
+
+- name: Configure Vxlan VLAN to VNI mappings
+  eos_vxlan_vlan:
+    name=Vxlan1
+    vni={{ item.vni }}
+    vlan={{ item.vlanid }}
+    state={{ item.state|default(omit) }}
+    config={{ eos_eapi_config|default(omit) }}
+    username={{ eos_eapi_username|default(omit) }}
+    password={{ eos_eapi_password|default(omit) }}
+    enablepwd={{ eos_eapi_enablepwd|default(omit) }}
+    transport={{ eos_eapi_transport|default(omit) }}
+    connection={{ eos_eapi_connection|default(omit) }}
+    host={{ eos_eapi_host|default(omit) }}
+    port={{ eos_eapi_port|default(omit) }}
+    debug={{ eos_debug|default(omit) }}
+  with_items: vlans
+  when: vlans is defined and item.vni is defined
+  register: eos_vxlan_vlan_results
+
+- name: Purge VLAN to VNI mappings
+  eos_purge:
+    resource=eos_vxlan_vlan
+    results='{{ eos_vxlan_vlan_results|to_nice_json }}'
+    config={{ eos_eapi_config|default(omit) }}
+    username={{ eos_eapi_username|default(omit) }}
+    password={{ eos_eapi_password|default(omit) }}
+    enablepwd={{ eos_eapi_enablepwd|default(omit) }}
+    transport={{ eos_eapi_transport|default(omit) }}
+    connection={{ eos_eapi_connection|default(omit) }}
+    host={{ eos_eapi_host|default(omit) }}
+    port={{ eos_eapi_port|default(omit) }}
+    debug={{ eos_debug|default(omit) }}
+  when: eos_purge_vxlan and eos_vxlan_vlan_results
