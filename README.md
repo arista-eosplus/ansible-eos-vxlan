@@ -55,12 +55,11 @@ The tasks in this role are driven by the ``vxlan``, ``vteps``,
 
 **vlans** (list) each entry contains the following keys:
 
-|   Key | Type                      | Notes                                                                                                                                                                                                                                                                  |
-|------:|---------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|vlanid | string (required)         | The unique interface identifier name. The interface name must use the full interface name (no abbreviated names). Note: The name parameter only accepts Vxlan1 as the identifier                                                                                       |
-|   vni | string                    | Specifies the VNI value to assoicate with the Vxlan interface for managing the VLAN to VNI mapping. This value is only necessary when configuring the mapping with a state of present (default). Valie values for the vni parameter are in the range of 1 to 16777215. |
-|  vlan | string                    | Specifies the VLAN ID that is assocated with the Vxlan interface for managing the VLAN to VNI mapping. Valid values for the vlan parameter are in the range of 1 to 4094.                                                                                              |
-| state | choices: present*, absent | Set the state for the VNI mapping interface configuration.                                                                                                                                                                                                             |
+|    Key | Type                      | Notes                                                                                                                                                                                                                                                                  |
+|-------:|---------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| vlanid | string (required)         | Specifies the VLAN ID that is assocated with the Vxlan interface for managing the VLAN to VNI mapping. Valid values for the vlan parameter are in the range of 1 to 4094.                                                                                              |
+|    vni | string                    | Specifies the VNI value to assoicate with the Vxlan interface for managing the VLAN to VNI mapping. This value is only necessary when configuring the mapping with a state of present (default). Valie values for the vni parameter are in the range of 1 to 16777215. |
+|  state | choices: present*, absent | Set the state for the VNI mapping interface configuration.                                                                                                                                                                                                             |
 
 ```
 Note: The vlans list is the same list that is used in the arista.eos-bridging role.
