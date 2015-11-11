@@ -30,7 +30,7 @@ Role Variables
 --------------
 
 The tasks in this role are driven by the ``vxlan``, ``vteps``,
-``vxlan_vlans``, and ``eos_purge_vxlan`` objects described below:
+``vlans``, and ``eos_purge_vxlan`` objects described below:
 
 **vxlan** (dictionary) contains the following keys:
 
