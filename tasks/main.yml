@@ -39,8 +39,9 @@
   when: vxlan is defined and vxlan.name is defined
 
 - block:
-  # If there was a change in the vxlan task, we need to update
+  # If the vxlan task resulted in a change, we need to update
   # _eos_config, otherwise we may get unintended results
+  # on future tasks
 
   - name: Gather EOS configuration
     eos_command:
