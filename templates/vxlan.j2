@@ -1,0 +1,73 @@
+! templates/vxlan.j2
+#jinja2: trim_blocks: False
+#jinja2: lstrip_blocks: False
+
+{% set name = vxlan.name %}
+{% set state = vxlan.state | default(vxlan_default_state) %}
+
+{% if state == 'absent' %} {# remove the vxlan if it exists #}
+   {% set vxlan_block = _eos_config | config_block("interface " + name, indent=3) %}
+   {% if vxlan_block %}
+
+no interface {{ name }}
+
+   {% endif %}
+
+{% elif state == 'present' %} {# configure the vxlan #}
+
+interface {{ name }}
+
+   {% set desc = vxlan.description | default('') %}
+   {% if desc %}
+
+   description {{ desc }}
+
+   {% elif desc == '' %}
+
+   no description
+
+   {% endif %}
+
+   {% set enable = vxlan.enable | default(vxlan_default_enable) %}
+   {% if enable %}
+
+   no shutdown
+
+   {% else %}
+
+   shutdown
+
+   {% endif %}
+
+   {% set src_intf = vxlan.source_interface | default('') %}
+   {% if src_intf %}
+
+   vxlan source-interface {{ src_intf }}
+
+   {% elif src_intf == '' %}
+
+   no vxlan source-interface
+
+   {% endif %}
+
+   {% set multi_grp = vxlan.multicast_group | default('') %}
+   {% if multi_grp %}
+
+   vxlan multicast-group {{ multi_grp }}
+
+   {% elif multi_grp == '' %}
+
+   no vxlan multicast-group
+
+   {% endif %}
+
+   {% set udp_port = vxlan.udp_port | default(vxlan_default_udp_port) %}
+   {% if udp_port == '' %}
+      {% set udp_port = vxlan_default_udp_port %}
+   {% endif %}
+   {% if udp_port %}
+
+   vxlan udp-port {{ udp_port }}
+
+   {% endif %}
+{% endif %}

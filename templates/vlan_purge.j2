@@ -1,0 +1,42 @@
+! templates/vlan_purge.j2
+#jinja2: trim_blocks: False
+#jinja2: lstrip_blocks: False
+
+{% set intf = "Vxlan1" %}
+
+{# get the current config block for the vxlan interface #}
+{% set vxlan_block = _eos_config | config_block("interface " + intf, indent=3) %}
+
+{# ------------------ #}
+{% if not vxlan_block %}
+   {# if the vxlan is not configured, we have a problem #}
+   {# the line below will force an error on the task, but #}
+   {# technically should not happen #}
+   {{ "Error configuring vxlan vlan vni: Vxlan1 not configured" }}
+
+{% else %}
+   {# find all the currently set vni mappings #}
+   {% set match = vxlan_block | join('\n') | re_findall("vxlan vlan (\d+) vni") %}
+
+   {# if no match found, nothing to purge, otherwise... #}
+   {% if match %}
+
+interface {{ intf }}
+
+      {# build a list of vlan ids from the vlans block #}
+      {% set vlan_list = [] %}
+      {% for vlan in vlans %}
+         {% if vlan.vlanid is defined %}
+            {# assign an unused variable to append the list #}
+            {% set dump = vlan_list.append("%s" % vlan.vlanid) %}
+         {% endif %}
+      {% endfor %}
+
+      {% set purge_list = match | difference(vlan_list) %}
+      {% for purge in purge_list %}
+
+   no vxlan vlan {{ purge }} vni
+
+      {% endfor %}
+   {% endif %}
+{% endif %}

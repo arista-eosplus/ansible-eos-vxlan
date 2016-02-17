@@ -1,0 +1,38 @@
+! templates/vlan.j2
+#jinja2: trim_blocks: False
+#jinja2: lstrip_blocks: False
+
+{% set vlanid = item.vlanid %}
+{% set state = item.state | default(vxlan_vlan_default_state) %}
+{% set vni = item.vni | default('') %}
+{% set intf = "Vxlan1" %}
+
+{% set vxlan_block = _eos_config | config_block("interface " + intf, indent=3) %}
+
+{# ------------------ #}
+{% if not vxlan_block %}
+   {# if the vxlan is not configured, we have a problem #}
+   {# the line below will force an error on the task, but #}
+   {# technically should not happen #}
+   {{ "Error configuring vxlan vlan vni: Vxlan1 not configured" }}
+
+{% else %} {# vxlan_block exists, add or remove vni mapping #}
+
+interface {{ intf }}
+
+   {# ----------------------------------------------------------------------------------- #}
+   {% if state == 'absent' %} {# vlan vni mapping is to be removed #}
+      {% set match = vxlan_block | join('\n') | re_search("vxlan vlan %s vni" % vlanid) %}
+      {% if match %}
+
+   no vxlan vlan {{ vlanid }} vni
+
+      {% endif %}
+
+   {# --------------------------------------------------------------------------- #}
+   {% elif vni and state == 'present' %} {# vni is specified and state is present #}
+
+   vxlan vlan {{ vlanid }} vni {{ vni }}
+
+   {% endif %}
+{% endif %}

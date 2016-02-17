@@ -7,9 +7,9 @@ Simply create an object that matches the requirements below
 and this role will ingest that object and perform the necessary configuration.
 
 This role is used to configure logical Vxlan interfaces, Vlan to VNI mapping,
-and the VTEP global flood list. It will **NOT** create the underlying Vlans,
-so it is recommended to use arista.eos-bridging to do that.  These two roles
-work in tandem nicely by analyzing the same ``vlans`` object to drive
+and the VTEP global/vlan flood list. It will **NOT** create the underlying
+Vlans, so it is recommended to use arista.eos-bridging to do that.  These two
+roles work in tandem nicely by analyzing the same ``vlans`` object to drive
 their respective tasks (more info below).
 
 Installation
@@ -23,8 +23,9 @@ ansible-galaxy install arista.eos-vxlan
 Requirements
 ------------
 
-Requires the arista.eos role.  If you have not worked with the arista.eos role,
-consider following the [Quickstart][quickstart] guide.
+Requires an SSH connection for connectivity to your Arista device. You can use
+any of the built-in eos connection variables, or the convenience ``provider``
+dictionary.
 
 Role Variables
 --------------
@@ -37,28 +38,43 @@ The tasks in this role are driven by the ``vxlan``, ``vteps``,
 |              Key | Type                      | Notes                                                                                                                                                                                                                                                 |
 |-----------------:|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |             name | string (required)         | The unique interface identifier name. The interface name must use the full interface name (no abbreviated names). Note: The name parameter only accepts Vxlan1 as the identifier                                                                      |
-|      description | string                    | Configures a one lne ASCII description for the interface. The EOS default value for description is None                                                                                                                                               |
-|           enable | boolean: true*, false     | Configures the administrative state for the interface. Setting the value to true will adminstrative enable the interface and setting the value to false will administratively disable the interface. The EOS default value for enable is true         |
+|      description | string                    | Configures a one line ASCII description for the interface. The EOS default value for description is None                                                                                                                                               |
+|           enable | boolean: true*, false     | Configures the administrative state for the interface. Setting the value to true will administratively enable the interface and setting the value to false will administratively disable the interface. The EOS default value for enable is true         |
 | source_interface | string                    | Configures the vxlan source-interface value which directs the interface to use the specified source interface address to source messages from. The configured value must be a Loopback interface. The EOS default value for source interface is None. |
 |  multicast_group | string                    | Configures the vxlan multicast-group address used for flooding traffic between VTEPs. This value must be a valid multicast address in the range of 224/8. The EOS default value for vxlan multicast-group is None.                                    |
-|         udp_port | string                    | Configures the vxlan udp-port value used to terminate mutlicast messages between VTEPs. This value must be an integer in the range of 1024 to 65535. The EOS default value for vxlan udp-port is 4789.                                                |
+|         udp_port | string                    | Configures the vxlan udp-port value used to terminate multicast messages between VTEPs. This value must be an integer in the range of 1024 to 65535. The EOS default value for vxlan udp-port is 4789.                                                |
 |            state | choices: present*, absent | Set the state for the Vxlan interface configuration.                                                                                                                                                                                                  |
+
+```
+Note: If the vxlan object is not defined or has state set to absent, then
+the vteps, vlans, and eos_purge_vxlan objects are ignored, and the related
+tasks from this role are skipped.
+```
 
 **vteps** (list) each entry contains the following keys:
 
 |   Key | Type                      | Notes                                                                                                                                                                            |
 |------:|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  name | string (required)         | The unique interface identifier name. The interface name must use the full interface name (no abbreviated names). Note: The name parameter only accepts Vxlan1 as the identifier |
-|  vtep | string                    | Specifies the remote endpoint IP address to add to the global VTEP flood list. Valid values for the vtep parameter are unicast IPv4 addresses                                    |
-|  vlan | string                    | Specifies the VLAN ID to associate the VTEP with. If the VLAN argument is not used, the the VTEP is confgured on the global flood list.                                          |
+|  name | string                    | The unique interface identifier name. The interface name must use the full interface name (no abbreviated names). Note: Defaults to Vxlan1, and any other name will result in error. |
+|  vtep | string                    | Specifies the remote endpoint IP address to add to the global VTEP flood list. Valid values for the vtep parameter are unicast IPv4 addresses. Multiple addresses may be specified as a space separated list, or as a yaml format list (see examples). |
+|  vlan | string                    | Specifies the VLAN ID to associate the VTEP with. If the VLAN argument is not used, the the VTEP is configured on the global flood list.                                         |
 | state | choices: present*, absent | Set the state for the Vxlan interface configuration.                                                                                                                             |
+| reset | choices: true, false*     | If True, remove all existing vtep entries from the specified vlan before performing adding or removing named entries. See clarification note below and examples.                 |
+
+```
+Note: clarification of state/reset combinations
+  present/true - will replace any existing vtep entries with the specified vtep entries
+  present/false - will add the specified entries to any existing enties
+  absent/true - will remove all vtep entries for the specified vlan, regardless of what vtep value is given
+  absent/false - will remove only the specified vtep entries from the named vlan
+```
 
 **vlans** (list) each entry contains the following keys:
 
 |    Key | Type                      | Notes                                                                                                                                                                                                                                                                  |
 |-------:|---------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| vlanid | string (required)         | Specifies the VLAN ID that is assocated with the Vxlan interface for managing the VLAN to VNI mapping. Valid values for the vlan parameter are in the range of 1 to 4094.                                                                                              |
-|    vni | string                    | Specifies the VNI value to assoicate with the Vxlan interface for managing the VLAN to VNI mapping. This value is only necessary when configuring the mapping with a state of present (default). Valie values for the vni parameter are in the range of 1 to 16777215. |
+| vlanid | string (required)         | Specifies the VLAN ID that is associated with the Vxlan interface for managing the VLAN to VNI mapping. Valid values for the vlan parameter are in the range of 1 to 4094.                                                                                              |
+|    vni | string                    | Specifies the VNI value to associate with the Vxlan interface for managing the VLAN to VNI mapping. This value is only necessary when configuring the mapping with a state of present (default). Valid values for the vni parameter are in the range of 1 to 16777215. |
 |  state | choices: present*, absent | Set the state for the VNI mapping interface configuration.                                                                                                                                                                                                             |
 
 ```
@@ -82,10 +98,10 @@ Note: Asterisk (*) denotes the default value if none specified
 Dependencies
 ------------
 
-The eos-vxlan role utilizes modules distributed within the
-arista.eos role.
+The eos-interfaces role is built on modules included in the core Ansible code.
+These modules were added in ansible version 2.1
 
-- arista.eos version 1.2.0
+- Ansible 2.1.0
 - arista.eos-bridging (not strictly required, but recommended to create the vlans)
 
 Example Playbook
@@ -114,7 +130,31 @@ Sample host_vars/leaf1.example.com
         multicast_group: 239.10.10.10
 
     vteps:
+      # add a global vtep entry
       - vtep: 4.4.4.4
+      # add vlan specific entries
+      - vtep: 1.1.1.1 2.2.2.2
+        vlan: 101
+      # replace vlan specific entries
+      - vtep:
+        - 9.9.9.9
+        - 8.8.8.8
+        vlan: 102
+        reset: true
+      # remove all vlan vtep entries (vtep is ignored)
+      - vtep: 1.2.3.4
+        vlan: 104
+        state: absent
+        reset: true
+      # remove all vlan vtep entries (no vtep specified)
+      - vlan: 105
+        state: absent
+        reset: true
+      # remove specific vlan vtep entries only
+      - vtep: 6.6.6.6 2.2.2.2
+        vlan: 106
+        state: absent
+        reset: false
 
     vlans:
       - vlanid: 1
