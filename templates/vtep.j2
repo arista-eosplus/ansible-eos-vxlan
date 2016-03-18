@@ -1,0 +1,102 @@
+! templates/vtep.j2
+#jinja2: trim_blocks: False
+#jinja2: lstrip_blocks: False
+
+{% set name = item.name | default(vxlan_default_name) %}
+{% set vtep_list = item.vtep | default('') %}
+{% if vtep_list is string %}
+   {# if list is passed in as a string, break it apart at spaces, #}
+   {# removing any duplicates and empty entries due to multiple spaces #}
+   {% set vtep_list = vtep_list.split(' ') | unique | difference(['']) %}
+{% endif %}
+{% set vtep = vtep_list | sort | join(' ') %}
+{% set state = item.state | default(vxlan_vtep_default_state) %}
+{% set reset = item.reset | default(vxlan_vtep_default_reset) %}
+
+{% set vlan = item.vlan | default('') %}
+{% if vlan %}
+   {% set vlan = "vlan %s " % vlan %}
+{% endif %}
+
+{% set vxlan_block = _eos_config | config_block("interface " + name, indent=3) %}
+
+{# ------------------ #}
+{% if not vxlan_block %}
+   {# if the vxlan is not configured, we have a problem #}
+   {# the line below will force an error on the task, but #}
+   {# technically should not happen #}
+   {{ "Error configuring vtep: Vxlan1 not configured" }}
+
+{# --------------------------------------------------------------------- #}
+{% elif state == 'absent' %} {# remove the specified vtep from the vxlan #}
+
+interface {{ name }}
+
+   {% if reset %}
+      {% set flood = "vxlan %sflood vtep" % vlan %}
+      {% set match = vxlan_block | join('\n') | re_search("^%s" % flood) %}
+      {% if match %}
+
+   no vxlan {{ vlan }}flood vtep
+
+      {% endif %}
+   {% else %}
+      {# get a list of the current ip addresses on this vxlan #}
+      {% set flood = "vxlan %sflood vtep([ \d\.]*)" % vlan %}
+      {% set match = vxlan_block | join('\n') | re_search("^%s" % flood) %}
+
+      {# if a match was found, split the ip list and determine which #}
+      {# need to be removed. #}
+      {% if match %}
+         {% set match_list = match.group(1).split(' ') | unique | difference(['']) %}
+         {% set remv_list = vtep_list | intersect(match_list) %}
+         {% set remove = remv_list | join(' ') %}
+         {% if remove %}
+
+   vxlan {{ vlan }}flood vtep remove {{ remove }}
+
+         {% endif %}
+      {% endif %}
+   {% endif %}
+
+{# ---------------------------------------------------------- #}
+{% elif state == 'present' %} {# configure the specified vtep #}
+
+interface {{ name }}
+
+      {% if vtep %}
+      {# a vtep IP was passed in #}
+      {# there is no 'else' block - if state is present and no vtep is specified #}
+      {# then no action is performed. can't add an empty vtep #}
+
+         {% if reset %}
+         {# present/reset/vtep given - replace all current IPs with the specified vtep #}
+
+   vxlan {{ vlan }}flood vtep {{ vtep }}
+
+         {% else %}
+            {# present/vtep given - add the specified vtep IP to the current list #}
+
+            {# get a list of the current ip addresses on this vxlan #}
+            {% set flood = "vxlan %sflood vtep([ \d\.]*)" % vlan %}
+            {% set match = vxlan_block | join('\n') | re_search("^%s" % flood) %}
+
+            {# split ip list, if found. otherwise no vxlan/vlan match #}
+            {# was found, so set an empty list in that case #}
+            {% set match_list = [] %}
+            {% if match %}
+               {% set match_list = match.group(1).split(' ') | unique | difference(['']) %}
+            {% endif %}
+
+            {# determine what ips need to be added #}
+            {% set add_list = vtep_list | difference(match_list) %}
+            {% set add = add_list | join(' ') %}
+            {% if add %}
+
+   vxlan {{ vlan }}flood vtep add {{ add }}
+
+            {% endif %}
+         {% endif %} {# if reset - how should vtep be added #}
+      {% endif %} {# if vtep - was vtep specified in role config #}
+
+{% endif %}
