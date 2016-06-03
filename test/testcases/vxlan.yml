@@ -1,0 +1,10 @@
+---
+defaults:
+  module: vxlan
+
+testcases:
+  - name: XXX XXX
+    arguments:
+      vxlan:
+    setup: |
+    present: |
