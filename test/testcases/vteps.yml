@@ -1,0 +1,172 @@
+---
+defaults:
+  module: vteps
+
+testcases:
+  - name: Initialize vteps on the vxlan
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vteps:
+        - vtep: 10.1.1.1
+        - vtep: 101.1.1.2 101.1.1.1
+          vlan: 101
+        - vtep:
+          - 102.1.1.3
+          - 102.1.1.4
+          vlan: 102
+    setup: |
+      no interface Vxlan1
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan flood vtep 10.1.1.1
+         vxlan vlan 101 flood vtep 101.1.1.1 101.1.1.2
+         vxlan vlan 102 flood vtep 102.1.1.3 102.1.1.4
+
+  - name: Remove global vteps
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vteps:
+        - vtep: 10.1.1.4
+          state: absent
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      shutdown
+      vxlan flood vtep 10.1.1.4 10.1.1.10 10.1.1.11
+      vxlan vlan 101 flood vtep 101.1.1.5 101.1.1.6
+      vxlan vlan 102 flood vtep 102.1.1.8 102.1.1.9
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan flood vtep 10.1.1.10 10.1.1.11
+         vxlan vlan 101 flood vtep 101.1.1.5 101.1.1.6
+         vxlan vlan 102 flood vtep 102.1.1.8 102.1.1.9
+    absent: |
+      interface Vxlan1
+         vxlan flood vtep 10.1.1.4
+
+  - name: Remove vlan vteps
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vteps:
+        # remove all vlan 104 vtep entries (vtep addr is ignored)
+        - vtep: 1.2.3.4
+          vlan: 104
+          state: absent
+          reset: true
+        # remove all vlan vtep entries (no vtep addr specified)
+        - vlan: 105
+          state: absent
+          reset: true
+        # remove specific vlan vtep entries only
+        - vtep:
+          - 106.1.1.3
+          - 106.1.1.1
+          vlan: 106
+          state: absent
+          reset: false
+        # remove specific vlan vtep entries only (reset defaults to false)
+        - vtep: 107.1.1.2 107.1.1.4
+          vlan: 107
+          state: absent
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      shutdown
+      vxlan flood vtep 10.1.1.1 10.1.1.3 10.1.1.2
+      vxlan vlan 104 flood vtep 104.1.1.1 104.1.1.2 104.1.1.3
+      vxlan vlan 105 flood vtep 105.1.1.2 105.1.1.1
+      vxlan vlan 106 flood vtep 106.1.1.3 106.1.1.1 106.1.1.2
+      vxlan vlan 107 flood vtep 107.1.1.3 107.1.1.2 107.1.1.1
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan flood vtep 10.1.1.1 10.1.1.2 10.1.1.3
+         vxlan vlan 107 flood vtep 107.1.1.1 107.1.1.3
+         vxlan vlan 106 flood vtep 106.1.1.2
+    absent: |
+      interface Vxlan1
+         vxlan flood vtep 4.4.4.4
+         vxlan vlan 104 flood vtep 104.1.1.1 104.1.1.2 104.1.1.3
+         vxlan vlan 105 flood vtep 105.1.1.1 105.1.1.2
+
+  - name: Replace global vteps
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vteps:
+        - vtep: 10.1.1.20 10.1.1.18 10.1.1.19
+          reset: true
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      shutdown
+      vxlan flood vtep 10.1.1.12 10.1.1.10 10.1.1.11
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan flood vtep 10.1.1.18 10.1.1.19 10.1.1.20
+    absent: |
+      interface Vxlan1
+         vxlan flood vtep 10.1.1.10 10.1.1.11 10.1.1.12
+
+  - name: Replace vlan vteps
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vteps:
+        - vtep:
+          - 108.1.1.3
+          - 108.1.1.20
+          - 108.1.1.21
+          - 108.1.1.22
+          - 108.1.1.10
+          vlan: 108
+          reset: true
+        - vtep: 109.1.1.23 109.1.1.24 109.1.1.1
+          vlan: 109
+          reset: true
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      shutdown
+      vxlan vlan 108 flood vtep 108.1.1.1 108.1.1.2 108.1.1.3
+      vxlan vlan 109 flood vtep 109.1.1.1 109.1.1.2 109.1.1.3 109.1.1.4
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan vlan 108 flood vtep 108.1.1.3 108.1.1.10 108.1.1.20 108.1.1.21 108.1.1.22
+         vxlan vlan 109 flood vtep 109.1.1.1 109.1.1.23 109.1.1.24
+    absent: |
+      interface Vxlan1
+         vxlan vlan 108 flood vtep 108.1.1.1 108.1.1.2
+         vxlan vlan 109 flood vtep 109.1.1.2 109.1.1.3 109.1.1.4

@@ -3,8 +3,123 @@ defaults:
   module: vxlan
 
 testcases:
-  - name: XXX XXX
+  - name: Initialize vxlan
     arguments:
       vxlan:
+        name: Vxlan1
+        description: Vxlan to be added
+        source_interface: Loopback0
+        multicast_group: 225.10.10.10
+        udp_port: 5500
     setup: |
+      no interface Vxlan1
     present: |
+      interface Vxlan1
+         description Vxlan to be added
+         no shutdown
+         vxlan multicast-group 225.10.10.10
+         vxlan source-interface Loopback0
+         vxlan udp-port 5500
+
+  - name: Initialize vxlan with defaults
+    arguments:
+      vxlan:
+        name: Vxlan1
+    setup: |
+      no interface Vxlan1
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+
+  - name: Remove vxlan
+    arguments:
+      vxlan:
+        name: Vxlan1
+        state: absent
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      description Vxlan to be removed
+      vxlan multicast-group 226.10.10.10
+      vxlan source-interface Loopback0
+      vxlan udp-port 5501
+    absent: |
+      interface Vxlan1
+
+  - name: Modify vxlan
+    arguments:
+      vxlan:
+        name: Vxlan1
+        description: Modified vxlan
+        source_interface: Loopback1
+        multicast_group: 227.12.12.12
+        udp_port: 5500
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      description Initial vxlan
+      shutdown
+      vxlan multicast-group 225.10.10.10
+      vxlan source-interface Loopback0
+      vxlan udp-port 5000
+    present: |
+      interface Vxlan1
+         description Modified vxlan
+         no shutdown
+         vxlan multicast-group 227.12.12.12
+         vxlan source-interface Loopback1
+         vxlan udp-port 5500
+    absent: |
+      interface Vxlan1
+         description Initial vxlan
+         shutdown
+         vxlan multicast-group 225.10.10.10
+         vxlan source-interface Loopback0
+         vxlan udp-port 5000
+
+  - name: Modify vxlan to defaults
+    arguments:
+      vxlan:
+        name: Vxlan1
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      description Initial vxlan
+      shutdown
+      vxlan multicast-group 225.10.10.10
+      vxlan source-interface Loopback0
+      vxlan udp-port 5000
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+    absent: |
+      interface Vxlan1
+         description Initial vxlan
+         shutdown
+         vxlan multicast-group 225.10.10.10
+         vxlan source-interface Loopback0
+         vxlan udp-port 5000
+
+  - name: Send invalid vxlan name
+    exitcode: 2
+    changed: 0
+    arguments:
+      vxlan:
+        name: Vxlan2
+        description: Modified vxlan
+        source_interface: Loopback1
+        multicast_group: 227.12.12.12
+        udp_port: 5500
+    setup: |
+      no interface Vxlan1
+    absent: |
+      interface Vxlan1
+      interface Vxlan2

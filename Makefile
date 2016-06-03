@@ -11,7 +11,7 @@
 ########################################################
 # variable section
 
-NAME = "ansible-eos-route-control"
+NAME = "ansible-eos-vxlan"
 
 VERSION := $(shell cat VERSION)
 

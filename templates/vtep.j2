@@ -9,7 +9,7 @@
    {# removing any duplicates and empty entries due to multiple spaces #}
    {% set vtep_list = vtep_list.split(' ') | unique | difference(['']) %}
 {% endif %}
-{% set vtep = vtep_list | sort | join(' ') %}
+{% set vtep = vtep_list | ip_sort | join(' ') %}
 {% set state = item.state | default(vxlan_vtep_default_state) %}
 {% set reset = item.reset | default(vxlan_vtep_default_reset) %}
 

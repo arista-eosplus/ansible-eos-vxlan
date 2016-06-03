@@ -1,0 +1,205 @@
+---
+defaults:
+  module: vlan
+
+testcases:
+  - name: Initialize vlan mappings on the vxlan
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vlans:
+        - vlanid: 100
+          name: vlan_100_vni_1000
+          vni: 1000
+        - vlanid: 101
+          name: vlan_101_vni_101
+          vni: 101
+        - vlanid: 102
+          name: vlan_102_not_added
+        - vlanid: 103
+          name: vlan_103_vni_103
+          vni: 103
+    setup: |
+      no interface Vxlan1
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan vlan 100 vni 1000
+         vxlan vlan 101 vni 101
+         vxlan vlan 103 vni 103
+    absent: |
+      interface Vxlan1
+         vxlan vlan 102
+
+  - name: Add vlan mappings on the vxlan
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vlans:
+        - vlanid: 500
+          name: vlan_500_vni_501
+          vni: 501
+        - vlanid: 600
+          name: vlan_600_vni_602
+          vni: 602
+        - vlanid: 700
+          name: vlan_700_vni_703
+          vni: 703
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      shutdown
+      vxlan vlan 801 vni 8001
+      vxlan vlan 802 vni 8002
+      vxlan vlan 803 vni 8003
+      vxlan vlan 804 vni 8004
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan vlan 801 vni 8001
+         vxlan vlan 802 vni 8002
+         vxlan vlan 803 vni 8003
+         vxlan vlan 804 vni 8004
+         vxlan vlan 500 vni 501
+         vxlan vlan 600 vni 602
+         vxlan vlan 700 vni 703
+
+  - name: Remove vlan mappings from the vxlan
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vlans:
+        - vlanid: 201
+          name: remove_vlan_201
+          state: absent
+        - vlanid: 204
+          name: remove_vlan_204
+          state: absent
+        - vlanid: 202
+          name: remove_vlan_202
+          state: absent
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      shutdown
+      vxlan vlan 201 vni 2001
+      vxlan vlan 202 vni 2002
+      vxlan vlan 203 vni 2003
+      vxlan vlan 204 vni 2004
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan vlan 203 vni 2003
+    absent: |
+      interface Vxlan1
+         vxlan vlan 201 vni 2001
+         vxlan vlan 202 vni 2002
+         vxlan vlan 204 vni 2004
+
+  - name: Modify vlan mappings on the vxlan
+    changed: 2
+    arguments:
+      vxlan:
+        name: Vxlan1
+      vlans:
+        - vlanid: 301
+          name: update_vlan_301
+          vni: 3001
+        - vlanid: 304
+          name: update_vlan_304
+          vni: 3004
+        - vlanid: 302
+          name: update_vlan_302
+          vni: 32
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      shutdown
+      vxlan vlan 301 vni 2001
+      vxlan vlan 302 vni 2002
+      vxlan vlan 303 vni 2003
+      vxlan vlan 304 vni 2004
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan vlan 301 vni 3001
+         vxlan vlan 302 vni 32
+         vxlan vlan 303 vni 2003
+         vxlan vlan 304 vni 3004
+    absent: |
+      interface Vxlan1
+         vxlan vlan 301 vni 2001
+         vxlan vlan 302 vni 2002
+         vxlan vlan 304 vni 2004
+
+  - name: Add, modify, and purge vlan mappings on the vxlan
+    changed: 3
+    arguments:
+      eos_purge_vxlan: true
+      vxlan:
+        name: Vxlan1
+      vlans:
+        - vlanid: 401
+          name: add_vlan_401
+          vni: 4001
+        - vlanid: 404
+          name: keep_vlan_404
+          vni: 4004
+        - vlanid: 402
+          name: update_vlan_402
+          vni: 42
+        - vlanid: 410
+          name: add_vlan_410
+          vni: 410
+        - vlanid: 411
+          name: remove_vlan_411
+          state: absent
+        - vlanid: 412
+          name: remove_nonexistent_vlan_412
+          state: absent
+    setup: |
+      no interface Vxlan1
+      interface Vxlan1
+      shutdown
+      vxlan vlan 402 vni 4002
+      vxlan vlan 403 vni 4003
+      vxlan vlan 404 vni 4004
+      vxlan vlan 411 vni 4011
+      vxlan vlan 421 vni 421
+      vxlan vlan 422 vni 422
+    present: |
+      interface Vxlan1
+         no description
+         no shutdown
+         no vxlan multicast-group
+         no vxlan source-interface
+         vxlan udp-port 4789
+         vxlan vlan 401 vni 4001
+         vxlan vlan 402 vni 42
+         vxlan vlan 404 vni 4004
+         vxlan vlan 410 vni 410
+    absent: |
+      interface Vxlan1
+         vxlan vlan 403 vni 4003
+         vxlan vlan 411 vni 4011
+         vxlan vlan 421 vni 421
+         vxlan vlan 422 vni 422
