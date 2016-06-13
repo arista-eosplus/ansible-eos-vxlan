@@ -22,6 +22,8 @@ testcases:
           vni: 103
     setup: |
       no interface Vxlan1
+      interface Vxlan1
+      shutdown
     present: |
       interface Vxlan1
          no description
