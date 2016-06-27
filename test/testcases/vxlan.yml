@@ -109,7 +109,7 @@ testcases:
          vxlan udp-port 5000
 
   - name: Send invalid vxlan name
-    exitcode: 2
+    exitcode: 1
     changed: 0
     arguments:
       vxlan:
