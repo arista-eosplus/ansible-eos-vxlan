@@ -1,5 +1,7 @@
 ---
 # defaults file
+eos_save_running_config: true
+
 vxlan_default_name: Vxlan1
 vxlan_default_state: present
 vxlan_default_enable: true
