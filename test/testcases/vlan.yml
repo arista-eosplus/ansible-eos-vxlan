@@ -15,8 +15,6 @@ testcases:
         - vlanid: 101
           name: vlan_101_vni_101
           vni: 101
-        - vlanid: 102
-          name: vlan_102_not_added
         - vlanid: 103
           name: vlan_103_vni_103
           vni: 103
@@ -34,9 +32,6 @@ testcases:
          vxlan vlan 100 vni 1000
          vxlan vlan 101 vni 101
          vxlan vlan 103 vni 103
-    absent: |
-      interface Vxlan1
-         vxlan vlan 102
 
   - name: Add vlan mappings on the vxlan
     changed: 2

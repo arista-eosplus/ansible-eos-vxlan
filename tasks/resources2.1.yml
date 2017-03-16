@@ -1,0 +1,105 @@
+# Perform the EOS Vxlan tasks under Ansible 2.1 or earlier
+# using the Ansible eos_template module
+
+- name: Arista EOS Vxlan resources (Ansible <= 2.1)
+  eos_template:
+    src: vxlan.j2
+    include_defaults: true
+    config: "{{ _eos_config | default(omit) }}"
+    auth_pass: "{{ auth_pass | default(omit) }}"
+    authorize: "{{ authorize | default(omit) }}"
+    host: "{{ host | default(omit) }}"
+    password: "{{ password | default(omit) }}"
+    port: "{{ port | default(omit) }}"
+    provider: "{{ provider | default(omit) }}"
+    transport: 'cli'
+    use_ssl: "{{ use_ssl | default(omit) }}"
+    username: "{{ username | default(omit) }}"
+  notify: save running config
+  register: vxlan_result
+  when: vxlan is defined and vxlan.name is defined
+
+- block:
+  # If the vxlan task resulted in a change, we need to update
+  # _eos_config, otherwise we may get unintended results
+  # on future tasks
+
+  - name: Gather EOS configuration
+    eos_command:
+      commands: 'show running-config all | exclude \.\*'
+      provider: "{{ provider | default(omit) }}"
+      auth_pass: "{{ auth_pass | default(omit) }}"
+      authorize: "{{ authorize | default(omit) }}"
+      host: "{{ host | default(omit) }}"
+      password: "{{ password | default(omit) }}"
+      port: "{{ port | default(omit) }}"
+      transport: "cli"
+      use_ssl: "{{ use_ssl | default(omit) }}"
+      username: "{{ username | default(omit) }}"
+    register: output
+    no_log: "{{ no_log | default(true) }}"
+
+  - name: Save EOS configuration
+    set_fact:
+      _eos_config: "{{ output.stdout[0] }}"
+    no_log: "{{ no_log | default(true) }}"
+
+  when: vxlan_result | changed
+
+- block:
+  # skip the next tasks if vxlan was not defined, or if it
+  # was designated as absent, otherwise these tasks would re-create it
+
+  - name: Arista EOS Vxlan vtep resources (Ansible <= 2.1)
+    eos_template:
+      src: vtep.j2
+      include_defaults: true
+      config: "{{ _eos_config | default(omit) }}"
+      auth_pass: "{{ auth_pass | default(omit) }}"
+      authorize: "{{ authorize | default(omit) }}"
+      host: "{{ host | default(omit) }}"
+      password: "{{ password | default(omit) }}"
+      port: "{{ port | default(omit) }}"
+      provider: "{{ provider | default(omit) }}"
+      transport: 'cli'
+      use_ssl: "{{ use_ssl | default(omit) }}"
+      username: "{{ username | default(omit) }}"
+    notify: save running config
+    with_items: "{{ vteps | default([]) }}"
+
+  - name: Arista EOS Vxlan vlan resources (Ansible <= 2.1)
+    eos_template:
+      src: vlan.j2
+      include_defaults: true
+      config: "{{ _eos_config | default(omit) }}"
+      auth_pass: "{{ auth_pass | default(omit) }}"
+      authorize: "{{ authorize | default(omit) }}"
+      host: "{{ host | default(omit) }}"
+      password: "{{ password | default(omit) }}"
+      port: "{{ port | default(omit) }}"
+      provider: "{{ provider | default(omit) }}"
+      transport: 'cli'
+      use_ssl: "{{ use_ssl | default(omit) }}"
+      username: "{{ username | default(omit) }}"
+    notify: save running config
+    with_items: "{{ vlans | default([]) }}"
+    when: item.vlanid is defined
+
+  - name: Arista EOS Vxlan vlan purge (Ansible <= 2.1)
+    eos_template:
+      src: vlan_purge.j2
+      include_defaults: true
+      config: "{{ _eos_config | default(omit) }}"
+      auth_pass: "{{ auth_pass | default(omit) }}"
+      authorize: "{{ authorize | default(omit) }}"
+      host: "{{ host | default(omit) }}"
+      password: "{{ password | default(omit) }}"
+      port: "{{ port | default(omit) }}"
+      provider: "{{ provider | default(omit) }}"
+      transport: 'cli'
+      use_ssl: "{{ use_ssl | default(omit) }}"
+      username: "{{ username | default(omit) }}"
+    notify: save running config
+    when: eos_purge_vxlan
+
+  when: vxlan is defined and (vxlan.state is not defined or vxlan.state == 'present')
