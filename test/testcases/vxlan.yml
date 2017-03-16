@@ -122,4 +122,3 @@ testcases:
       no interface Vxlan1
     absent: |
       interface Vxlan1
-      interface Vxlan2

@@ -11,3 +11,5 @@ vxlan_vtep_default_action: reset
 vxlan_vtep_default_reset: false
 vxlan_vlan_default_state: present
 eos_purge_vxlan: false
+
+resource_version: '2.2'
