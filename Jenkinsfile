@@ -9,6 +9,12 @@
 
 node('master') {
 
+    /*
+     * Lock the Ansible-Role-Test 'resource' to prevent multiple
+     * instances of the role test build from attempting to
+     * run simultaneously. Forces a sequential queue for all roles.
+     */
+
     lock('Ansible-Role-Test') {
 
         currentBuild.result = "SUCCESS"
