@@ -7,59 +7,57 @@
  * pull request in the ansible-eos-vxlan repo
  */
 
-/* Only run against the master branch on the roles */
-if (env.BRANCH_NAME == 'master') {
-
-    node('master') {
-
-        /*
-        * Lock the Ansible-Role-Test 'resource' to prevent multiple
-        * instances of the role test build from attempting to
-        * run simultaneously. Forces a sequential queue for all roles.
-        */
-
-        lock('Ansible-Role-Test') {
-
-            currentBuild.result = "SUCCESS"
-
-            try {
-
-                stage ('Run tests for ansible-eos-vxlan role') {
-
-                    build job: 'Ansible-Role-Test',
-                        parameters: [string(name: 'ROLE_NAME', value: 'ansible-eos-vxlan')]
-
-                }
-
-                stage ('Generate email report') {
-
-                mail body: "${env.BUILD_URL} build successful.\n" +
-                            "Started by ${env.BUILD_CAUSE}",
-                        from: 'grybak@arista.com',
-                        replyTo: 'grybak@arista.com',
-                        subject: "ansible role test ${env.JOB_NAME} (${env.BUILD_NUMBER}) build successful",
-                        to: 'grybak@arista.com'
-
-                }
-
-            }
-
-            catch (err) {
-
-                currentBuild.result = "FAILURE"
-
-                    mail body: "${env.JOB_NAME} (${env.BUILD_NUMBER}) cookbook build error " +
-                            "is here: ${env.BUILD_URL}\nStarted by ${env.BUILD_CAUSE}" ,
-                        from: 'grybak@arista.com',
-                        replyTo: 'grybak@arista.com',
-                        subject: "ansible role test ${env.JOB_NAME} (${env.BUILD_NUMBER}) build failed",
-                        to: 'grybak@arista.com'
-
-                    throw err
-            }
-
-        }
-
+pipeline {
+    agent { label 'master' }
+    options {
+        buildDiscarder(
+            // Only keep the 20 most recent builds
+            logRotator(numToKeepStr:'20'))
+    }
+    environment {
+        projectName = 'ansible-eos-vxlan'
+        emailTo = 'grybak@arista.com'
+        emailFrom = 'grybak+jenkins@arista.com'
     }
 
+    stages {
+        stage ('Run tests for ansible-eos-vxlan role') {
+            when {
+                // Limit runs to any of these conditions
+                anyOf {
+                    branch 'master'     // master branch
+                    branch 'PR-*'       // pull requests
+                }
+            }
+            steps {
+                // Grab the revision hash and pass it to the test build
+                sh 'git rev-parse HEAD > revision'
+                build job: 'gar-test-starter',
+                      parameters: [
+                          string(name: 'ROLE_NAME', value: 'ansible-eos-vxlan'),
+                          string(name: 'REVISION', value: readFile('revision'))
+                      ]
+            }
+            post {
+                // Cleanup and notifications
+                failure {
+                    // Send an email with a link to logs on failure
+                    mail to: env.emailTo,
+                        from: env.emailFrom,
+                        subject: "${env.projectName} ${env.JOB_NAME} (${env.BUILD_NUMBER}) build failed",
+                        body: "${env.JOB_NAME} (${env.BUILD_NUMBER}) ${env.projectName} build error " +
+                            "is here: ${env.BUILD_URL}\nStarted by ${env.BUILD_CAUSE}"
+                }
+                success {
+                    // Send an email notification on success
+                    mail to: env.emailTo,
+                        from: env.emailFrom,
+                        subject: "${env.projectName} ${env.JOB_NAME} (${env.BUILD_NUMBER}) build successful",
+                        body: "${env.JOB_NAME} (${env.BUILD_NUMBER}) ${env.projectName} build successful\n" +
+                            "Started by ${env.BUILD_CAUSE}\n" +
+                            "${env.BUILD_URL}"
+                }
+            }
+        }
+    }
 }
