@@ -13,3 +13,6 @@ vxlan_vlan_default_state: present
 eos_purge_vxlan: false
 
 resource_version: '2.2'
+gather_config_commands:
+  - command: 'show running-config all | exclude \.\*'
+    output: 'text'
