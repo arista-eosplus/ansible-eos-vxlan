@@ -50,14 +50,25 @@ interface {{ name }}
 
    {% endif %}
 
+   {# For vEOS and 7150's the vxlan multicast-group command does not require #}
+   {# the decap keyword, but on all other platforms the decap keyword is #}
+   {# required. #}
+   {% set platform_match = _eos_config | re_search("! device: .*\((.*), EOS-.*\)$") %}
+   {% set platform = platform_match.group(1) %}
+   {% if '7150' in platform or 'vEOS' in platform %}
+      {% set decap = '' %}
+   {% else %}
+      {% set decap = ' decap' %}
+   {% endif %}
+
    {% set multi_grp = vxlan.multicast_group | default('') %}
    {% if multi_grp %}
 
-   vxlan multicast-group {{ multi_grp }}
+   vxlan multicast-group{{ decap }} {{ multi_grp }}
 
    {% elif multi_grp == '' %}
 
-   no vxlan multicast-group
+   no vxlan multicast-group{{ decap }}
 
    {% endif %}
 
